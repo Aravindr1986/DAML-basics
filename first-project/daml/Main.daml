@@ -2,43 +2,28 @@ module Main where
 
 import Daml.Script
 
-type AssetId = ContractId Asset
+template SearchContract
+   with
+       landlord: Party
+       alias: Text
+   where
+       signatory landlord
+       ensure alias /= ""
 
-template Asset
+template LeaseAgreement
   with
-    issuer : Party
-    owner  : Party
-    name   : Text
+    landlord: Party
+    tenant: Party
+    monthlyRent:Decimal
+    currency:Text
   where
-    ensure name /= ""
-    signatory issuer
-    observer owner
-    choice Give : AssetId
-      with
-        newOwner : Party
-      controller owner
-      do create this with
-           owner = newOwner
+        signatory landlord,tenant
+        
+test : Script ()
+test = script do
+   landlord <- allocateParty "LandLord"
 
-setup : Script AssetId
-setup = script do
--- user_setup_begin
-  alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
-  bob <- allocatePartyWithHint "Bob" (PartyIdHint "Bob")
-  aliceId <- validateUserId "alice"
-  bobId <- validateUserId "bob"
-  createUser (User aliceId (Some alice)) [CanActAs alice]
-  createUser (User bobId (Some bob)) [CanActAs bob]
--- user_setup_end
-
-  aliceTV <- submit alice do
-    createCmd Asset with
-      issuer = alice
-      owner = alice
-      name = "TV"
-
-  bobTV <- submit alice do
-    exerciseCmd aliceTV Give with newOwner = bob
-
-  submit bob do
-    exerciseCmd bobTV Give with newOwner = alice
+   submitMustFail landlord do
+       createCmd SearchContract with
+           landlord = landlord
+           alias =""

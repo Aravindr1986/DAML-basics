@@ -1,0 +1,44 @@
+module Lease where
+import Daml.Script
+
+template SearchContract
+  with
+    landlord: Party 
+    alias: Text
+  where
+    signatory landlord
+    ensure alias /= ""
+
+template LeaseAgreement
+  with
+    landlord: Party
+    tenant: Party
+    monthlyRent: Decimal
+    currency: Text
+  where
+    signatory
+      landlord, tenant
+ 
+choice Renewal : ContractId LeaseAgreement
+  with
+    newAmount : Decimal
+  controller landlord
+  do    
+    create this with monthlyRent = newAmount
+test = script do
+    landlord <- allocateParty "LandLord"
+    submitMustFail landlord do
+        createCmd SearchContract with
+            landlord 
+            alias = ""
+
+laTest = script  do
+   alice <- allocateParty "Alice"
+   landlord <- allocateParty "LandLord"
+
+   aliceLeaseCid <- submitMulti [landlord, alice] [] do
+     createCmd LeaseAgreement with
+     landlord 
+     tenant = alice
+     monthlyRent = 1000.00
+     currency = "USD"

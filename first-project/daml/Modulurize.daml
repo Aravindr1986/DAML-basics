@@ -1,0 +1,20 @@
+module Modulurize where
+
+import Daml.Script
+
+data TestParties = TestParties with
+    landlord: Party
+
+setupParties: Script TestParties
+setupParties = do
+    landlord <- allocateParty "LandLord"
+    return $ TestParties with
+            landlord
+
+noEmptyAlias: Script ()
+noEmptyAlias = do
+    testParties@TestParties{landlord} <- setupParties
+    submitMustFail landlord do
+        createCmd SearchContract with 
+         landlord 
+         alias = ""
